@@ -34,6 +34,9 @@ class Guard:
             self.x += self.facing[0]
             self.y += self.facing[1]
 
+    def copy(self):
+        return Guard(self.x, self.y, self.x_border, self.y_border)
+
 
 def parse_input(filename: str) -> List[List[str]]:
     with open(filename, "r") as f:
@@ -43,7 +46,7 @@ def parse_input(filename: str) -> List[List[str]]:
 
 def find_initial_guard_position(matrix):
     for y in range(len(matrix)):
-        for x in range(len(matrix[i])):
+        for x in range(len(matrix[y])):
             if matrix[y][x] == "^":
                 return x, y
 
@@ -72,22 +75,32 @@ def is_next_position_paradox_obstruction(
     return False
 
 
-def calculate_distinct_positions(guard: Guard, matrix: List[List[str]]) -> int:
-    starting_position_guard = deepcopy(guard)
+def find_obstructions(guard: Guard, matrix: List[List[str]]) -> int:
+    starting_position_guard = guard.copy()
     paradox_obstructions = set()
 
-    for y in range(len(matrix)):
-        for x in range(len(matrix[y])):
-            if x == starting_position_guard.x and y == starting_position_guard.y:
-                continue
-            if matrix[y][x] != "#" and is_next_position_paradox_obstruction(
+    while not guard.is_leaving_area():
+        x, y = guard.next_position()
+
+        if matrix[y][x] == "#":
+            guard.turn()
+            continue
+
+        if (
+            matrix[y][x] != "#"
+            and matrix[y][x] != "0"
+            and not (x == starting_position_guard.x and y == starting_position_guard.y)
+            and is_next_position_paradox_obstruction(
                 x,
                 y,
                 deepcopy(starting_position_guard),
                 deepcopy(matrix),
-            ):
-                paradox_obstructions.add(f"{x},{y}")
-                matrix[y][x] = "0"
+            )
+        ):
+            paradox_obstructions.add(f"{x},{y}")
+            matrix[y][x] = "0"
+
+        guard.walk()
 
     print("\n")
     for i in range(len(matrix)):
@@ -99,7 +112,7 @@ def calculate_distinct_positions(guard: Guard, matrix: List[List[str]]) -> int:
 if __name__ == "__main__":
     matrix = parse_input("day6/06-input.txt")
     x, y = find_initial_guard_position(matrix)
-    paradox_obstructions = calculate_distinct_positions(
+    paradox_obstructions = find_obstructions(
         Guard(x, y, len(matrix[0]), len(matrix)), matrix
     )
     print(f"\nparadox_obstructions: {paradox_obstructions}")
